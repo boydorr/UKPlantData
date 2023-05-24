@@ -1,18 +1,34 @@
 using Unitful
 using Unitful.DefaultSymbols
-using EcoSISTEM.Units
+using UKPlantData.Units
 using AxisArrays
 using NetCDF
-using JuliaDB
-using JLD
+using JLD2
 
 import Unitful.°, Unitful.°C, Unitful.mm
 import ArchGDAL
-import EcoSISTEM.ClimatePref.read
-import EcoSISTEM.ClimatePref.searchdir
 const AG = ArchGDAL
 
-unitdict = Dict("K" => K, "m" => m, "J m**-2" => J/m^2, "m**3 m**-3" => m^3, "degC" => °C, "mm" => mm, "hour" => u"hr", "kg m-2 s-1" => kg/(m^2*s), "mm/day" => mm/day)
+unitdict = Dict("K" => K, "m" => m, "J m**-2" => J/m^2, "m**3 m**-3" => m^3, "degC" => °C, "mm" => mm, "hour" => u"hr", "kg m-2 s-1" => kg/(m^2*s), "mm/day" => mm/day, "hours since 1970-01-01T00:00:00Z" => Unitful.hr)
+"""
+    read(f, filename)
+
+Function to read raster file into julia.
+"""
+function read(f, filename)
+    return AG.environment() do
+        AG.read(filename) do dataset
+            f(dataset)
+        end
+    end
+end
+
+"""
+    searchdir(path,key)
+
+Function to search a directory `path` using a given `key` string.
+"""
+searchdir(path,key) = filter(x->occursin(key, x), readdir(path))
 
 """
     readlc(file::String)
@@ -134,30 +150,38 @@ function readCHESS(dir::String, param::String, times::Vector{T}) where T<: Unitf
     uk = AxisArray(array, Axis{:easting}(lon * m), Axis{:northing}(lat * m), Axis{:month}(times))
     return CHESS(uk[0.0m..1e6m, 0.0m..1.25e6m, :])
 end
-
-function upres(aa::AxisArray{T, 3} where T, rescale::Int64)
-    grid = size(aa)
-    grid = (grid[1] .* rescale, grid[2] .* rescale, grid[3])
-    array = Array{typeof(aa[1]), 3}(undef, grid)
-    map(1:grid[3]) do time
-        for x in 1:size(aa, 1)
-            for y in 1:size(aa, 2)
-        array[(rescale*x-(rescale-1)):(rescale*x),
-            (rescale*y-(rescale - 1)):(rescale*y), time] .= aa[x, y, time]
-            end
-        end
-    end
-    lon = aa.axes[1].val
-    step = lon[2] - lon[1]
-    smallstep = (lon[2] - lon[1]) / rescale
-    newlon = collect(lon[1]+smallstep:smallstep:(lon[end]+step))
-    lat = aa.axes[2].val
-    smallstep = (lat[2] - lat[1]) / rescale
-    newlat = collect(lat[1]+smallstep:smallstep:(lat[end]+step))
-    return AxisArray(array,
-        Axis{:longitude}(newlon),
-        Axis{:latitude}(newlat),
-        Axis{:time}(aa.axes[3].val))
+function readCHESS(file::String, param::String)
+    x = reverse(ncread(file, "x"))
+    y = ncread(file, "y")
+    time = ncread(file, "time") * 1.0
+    timeunits = ncgetatt(file, "time", "units")
+    time = uconvert.(years, time .* NEWUNITDICT[timeunits] .+ 1970years)
+    units = ncgetatt(file, param, "units")
+    units = NEWUNITDICT[units]
+    array = ncread(file, param) * 1.0
+    array[array .≈ ncgetatt(file, param, "_FillValue")] .= NaN
+    
+    return AxisArray(array * units, Axis{:x}(x * m), Axis{:y}(y * m),
+                        Axis{:time}(time))
+end
+function readCHESS(file::String, param::String, times::Vector{T}, xs::Vector{L}, ys::Vector{L}) where {T <: Unitful.Time, L <: Unitful.Length}
+    x = reverse(ncread(file, "x")) * m
+    y = ncread(file, "y") * m
+    select_xs = findall((x .>= xs[1]) .& (x .<= xs[end]))
+    select_ys = findall((y .>= ys[1]) .& (y .<= ys[end]))
+    time = ncread(file, "time") * 1.0
+    timeunits = ncgetatt(file, "time", "units")
+    time = uconvert.(years, time .* NEWUNITDICT[timeunits] .+ 1970years)
+    select_times = findall((time .>= times[1]) .& (time .<= times[end]))
+    units = ncgetatt(file, param, "units")
+    units = NEWUNITDICT[units]
+   
+    array = NetCDF.readvar(NetCDF.open(file), param, start=[minimum(select_xs), minimum(select_ys), minimum(select_times)],count = [length(select_xs),length(select_ys), length(select_times)])
+    array[array .≈ ncgetatt(file, param, "_FillValue")] .= NaN
+    array = array * 1.0
+    
+    return AxisArray(array * units, Axis{:x}(x[select_xs]), Axis{:y}(y[select_ys]),
+                        Axis{:time}(time[select_times]))
 end
 
 """
@@ -187,26 +211,6 @@ function readUKCP(file::String, param::String, times::Vector{T}, active::String)
     active_grid = JLD.load(active, "active") .== 0
     uk[active_grid, :] *= NaN
     return UKCP(uk)
-end
-
-
-"""
-    readPlantATT(file::String)
-
-Function to import PlantATT data as a JuliaDB table.
-"""
-function readPlantATT(file::String)
-    coldict = Dict(:BRC_code => String, :Taxon_name => String, :Fam => String, :FamA => String, :OrdA => String, :NS => String, :CS => String, :RS => String, :Chg => Float64, :Hght => Float64, :Len => Float64, :P1 => String, :P2 => String, :LF1 => String, :LF2 => String, :W => String, :Clone1 => String, :Clone2 => String, :E1 => Int64, :E2 => Int64, :C => String, :NBI => Int64, :NEur => String, :SBI => Int64, :SEur => String, :Origin => String, :GB => Int64, :IR => Int64, :CI => Int64, :Tjan => Float64, :Tjul => Float64, :Prec => Int64, :Co => String, :Br_Habitats => Vector{Int64}, :L => Int64, :F => Int64, :R => Int64, :N => Int64, :S => Int64)
-    return loadtable(file, colparsers = coldict)
-end
-
-"""
-    readNPMS(file::String)
-
-Function to import National Plant Monitoring Scheme data as a JuliaDB table.
-"""
-function readNPMS(file::String)
-    return loadtable(file)
 end
 
 """

@@ -1,36 +1,31 @@
-using UKplantSim
-using JuliaDB
-using JuliaDBMeta
+using UKPlantData
+using UKPlantData.Units
+using CSV
+using DataFrames
 using BritishNationalGrid
 using Unitful
-using EcoSISTEM.Units
 using Unitful.DefaultSymbols
 using AxisArrays
 using Statistics
-using EcoSISTEM
 using Distributions
 using Diversity
 using Plots
 
-bsbi = loadtable("data/plantdata/PlantData_87to99.txt")
-species = loadtable("data/plantdata/PlantData_Species.txt")
-squares = loadtable("data/plantdata/PlantData_Squares.txt")
-bsbi = join(bsbi, squares, lkey = :OS_SQUARE, rkey = :OS_SQUARE)
-bsbi = join(bsbi, species, lkey = :TAXONNO, rkey = :TAXONNO)
+bsbi = CSV.read("data/raw/plantdata/PlantData_87to99.txt", DataFrame)
+species = CSV.read("data/raw/plantdata/PlantData_Species.txt", DataFrame)
+squares = CSV.read("data/raw/plantdata/PlantData_Squares.txt", DataFrame)
+bsbi = innerjoin(bsbi, squares, on = :OS_SQUARE)
+bsbi = innerjoin(bsbi, species, on = :TAXONNO)
 bsbi = rename(bsbi, :TAXONNO => :SppID)
 
-bsbi = distribute(bsbi, 12)
+pa = CSV.read("data/raw/PLANTATT_19_Nov_08.csv", DataFrame)
 
-pa = readPlantATT("data/PLANTATT_19_Nov_08.csv")
-
-spp_bsbi = unique(collect(select(bsbi, :NAME)))
-spp_pa = collect(select(pa, :Taxon_name))
-cross_species = spp_bsbi ∩ spp_pa
+cross_species = bsbi.NAME ∩ pa."Taxon name"
 bsbi = filter(b -> b.NAME ∈ cross_species, bsbi)
 
 # Create reference for UK grid
 ref = createRef(1000.0m, 500.0m, 7e5m, 500.0m, 1.3e6m)
-bsbi = transform(bsbi, (:refval => (:EAST, :NORTH) => x -> UKplantSim.extractvalues(x[1] * m, x[2] * m, ref)))
+bsbi = transform(bsbi, (:refval => (:EAST, :NORTH) => x -> extractvalues(x[1] * m, x[2] * m, ref)))
 bsbi = insertcols(bsbi, 2, :refid => fill(1, length(bsbi)))
 
 start = startingArray(bsbi, length(species), 10)
