@@ -8,9 +8,10 @@ include("units.jl")
 include("ClimateTypes.jl")
 
 include("Read.jl")
-export readLC, readCrop, readHadUK, readCHESS, readUKCP, readSoils
+export readfile, readLC, readCrop, readHadUK, readCHESS, readUKCP, readSoils
 
 include("Process.jl")
-export OSGR_eastnorth, get_neighbours, extractvalues, createRef, startingArray, upres
+export OSGR_eastnorth, get_neighbours, extractvalues, createRef, startingArray, upres, 
+convert_coords, coarsenRef, combineLC
 
 end

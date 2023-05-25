@@ -2,6 +2,7 @@ using BritishNationalGrid
 using AxisArrays
 using Unitful
 using DataFrames
+using DataFrameMacros
 using Distributions
 using LinearAlgebra
 
@@ -54,6 +55,21 @@ function get_neighbours(mat::Matrix, x_coord::Array{Int64,1},
 end
 
 
+"""
+    convert_coords(i::Int64, width::Int64)
+    convert_coords(x::Int64, y::Int64, width::Int64)
+Function to convert coordinates from two-dimensional (`x`,`y`) format to one dimension (`i`), or vice versa, using the `width` of the grid. This function can also be applied to arrays of coordinates.
+"""
+
+function convert_coords(i::Int64, width::Int64)
+  x = ((i - 1) % width) + 1
+  y = div((i - 1), width)  + 1
+  return (x, y)
+end
+function convert_coords(x::Int64, y::Int64, width::Int64)
+  i = x + width * (y - 1)
+  return i
+end
 """
     extractvalues(x::Vector{L},y::Vector{L}, ref::Reference) where L <: Unitful.Length
 
@@ -110,20 +126,15 @@ be spread across.
 function startingArray(bsbi::DataFrame, numspecies::Int64, sf::Int64, res::Unitful.Length{Float64} = 1000.0m, xmin::Unitful.Length{Float64} = 500.0m, xmax::Unitful.Length{Float64} = 7e5m, ymin::Unitful.Length{Float64} = 500.0m, ymax::Unitful.Length{Float64} = 1.25e6m)
     ref = createRef(res, xmin, xmax, ymin, ymax)
     fillarray = Array{Int64, 2}(undef, numspecies, length(ref.array))
-    grouped_tab = groupby((:count => :refid => length), bsbi, (:SppID, :refval))
-    ids = sort(unique(collect(select(bsbi, :SppID))))
+    ids = sort(unique(bsbi.SppID))
     dict = Dict(zip(ids, 1:length(ids)))
-    #sppnames = [dict[x] for x in collect(select(grouped_tab, :SppID))]
-    #refs = collect(select(grouped_tab, :refval))
-    #counts = collect(select(grouped_tab, :count))
     clustarray = zeros(size(ref.array))
     probarray = zeros(size(ref.array))
     for i in ids
-        find_probs!(grouped_tab, ref, probarray, clustarray, sf, i)
+        find_probs!(bsbi, ref, probarray, clustarray, sf, i)
         multi = rand(Multinomial(Int(sum(probarray .> 0) * 1e3), probarray[1:end]))
         fillarray[dict[i], :] .= multi[1:end]
         clustarray .= 0; probarray .= 0
-        print(i, "\n")
     end
     return fillarray
 end
@@ -133,15 +144,11 @@ end
 
 Function to find probability of abundance across
 """
-function find_probs!(grouped_tab::DataFrame, ref::Reference, probarray::Matrix{Float64}, clustarray::Matrix{Float64}, sf::Int64, spp::Int64)
-    refs = select(filter(g-> g.SppID == spp, grouped_tab), :refval)
-    if length(refs) > 1
-        xs,ys = convert_coords.(refs, size(ref.array,1))
-    else
-        xs, ys = convert_coords.(refs, size(ref.array,1))[1]
-    end
-    newrefs = map(xs, ys) do x, y
-        newxs = collect(x:(x + sf -1)); newys =  collect(y:(y + sf-1))
+function find_probs!(bsbi::DataFrame, ref::Reference, probarray::Matrix{Float64}, clustarray::Matrix{Float64}, sf::Int64, spp::Int64)
+    refs = filter(g-> g.SppID == spp, bsbi).refval
+    xys = convert_coords.(refs, size(ref.array,1))
+    newrefs = map(xys) do xy
+        newxs = collect(xy[1]:(xy[1] + sf -1)); newys =  collect(xy[2]:(xy[2] + sf-1))
         newxs = newxs[newxs .< 700]; newys = newys[newys .< 1250]
         newrefs = ref.array[newxs, newys][1:end]
         return newrefs
