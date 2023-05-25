@@ -1,53 +1,23 @@
-using UKplantSim
-using JuliaDB
-using JuliaDBMeta
+using Revise
+using UKPlantData
+using DataFrames
+using DataFrameMacros
 using BritishNationalGrid
 using Unitful
-using EcoSISTEM.Units
 using Unitful.DefaultSymbols
+using UKPlantData.Units
 using AxisArrays
 using Statistics
-using EcoSISTEM
 using Distributions
-using Diversity
 using Plots
-gr()
+using JLD2
 
-import UKplantSim.LandCover
-
-crop = readCrop("data/Crop2017.tif")
-
-times = collect(2008year:1month:2017year+11month)
-dir = "HadUK/sun/"
-sun = readHadUK(dir, "sun", times)
-active = Array{Bool, 2}(.!isnan.(sun.array[:, :, 1]))
-
-cc = Array(crop.array[:, 1000m .. 1.25e6m])
-cc[isnan.(cc)] .= 0
-cc[.!active] .= NaN
-crop = CropCover(AxisArray(cc, Axis{:northing}(sun.array.axes[1].val), Axis{:easting}(sun.array.axes[2].val)))
-plot(crop)
-Plots.pdf("CropCover2017.pdf")
-
-
-lc = readLC("CEH_landcover_2015.tif")
-plot(lc)
-Plots.pdf("LandCover2017.pdf")
-
-function combineLC(lc::LandCover, cc::CropCover)
-    lc = lc.array[:, 0m .. 1.25e6m]
-    cropland = findall(cc.array .> 0)
-    agland = findall(lc .== 3)
-    inter = agland ∩ cropland
-    lc[inter] += (cc.array[inter] .+ 18)
-    return LandCover(lc)
-end
-
+crop = readCrop("data/raw/Crop2017.tif")
+lc = readLC("data/raw/CEH_landcover_2015.tif")
 newlc = combineLC(lc, crop)
 plot(newlc)
-Plots.pdf("LandCropCombo.pdf")
 
-start = JLD.load("StartArray.jld", "start")
+JLD2.@load "data/final/StartArray.jld2"
 start = reshape(start, size(start, 1), 700, 1250)
 ag = findall(lc.array .== 3)
 start[:, ag] .= 0
@@ -57,26 +27,14 @@ for i in 1:11
     crops[i, locs] .= 1e3
 end
 start = cat(start, crops, dims = 1)
-abun = start[end, :, :]
-abun[.!active] .= NaN
-heatmap(transpose(abun), background_color = :lightblue, background_color_outside = :white, grid = false, color = :algae, aspect_ratio = 1)
-Plots.pdf("StartAbun.pdf")
+@JLD2.save "data/final/StartArrayCrops.jld2" start
 
-abun = reshape(start, size(start, 1), 700 * 1250)
-abun = norm_sub_alpha(Metacommunity(abun), 1.0)[:diversity]
-abun = reshape(abun, 700, 1250)
-abun[isnan.(abun)] .= 0
-abun[.!active] .= NaN
-heatmap(transpose(abun), background_color = :lightblue, background_color_outside = :white, grid = false, color = :algae, aspect_ratio = 1)
-Plots.pdf("StartCropDiv.pdf")
-
-using JLD
-dir = "HadUK/tas/"
-times = collect(2008year:1month:2017year+11month)
+dir = "data/raw/HadUK/tas/"
+times = collect(2010year:1month:2017year+11month)
 tas = readHadUK(dir, "tas", times)
-dir = "HadUK/rainfall/"
+dir = "data/raw/HadUK/rainfall/"
 rainfall = readHadUK(dir, "rainfall", times)
-dir = "HadUK/sun/"
+dir = "data/raw/HadUK/sun/"
 sun = readHadUK(dir, "sun", times)
 
 # Take means of 2015 (same as for LC)
@@ -91,14 +49,14 @@ trt_means = map(1:11) do i
     return [namean(meantas2015[locs]), namean(meanrainfall2015[locs]), namean(meansun2015[locs])]
 end
 trt_means = hcat(trt_means...)
-JLD.save("Crop_trait_means.jld", "trt_means", trt_means)
+JLD2.@save "data/final/Crop_trait_means.jld2" trt_means
 
 trt_stds = map(1:11) do i
     locs = findall(newlc.array .== (i+21))
     return [nastd(meantas2015[locs]), nastd(meanrainfall2015[locs]), nastd(meansun2015[locs])]
 end
 trt_stds = hcat(trt_stds...)
-JLD.save("Crop_trait_stds.jld", "trt_stds", trt_stds)
+JLD2.@save "data/final/Crop_trait_stds.jld2" trt_stds
 
 
 locs = findall(newlc.array .== (22))
@@ -110,14 +68,10 @@ barley_means = [namean(meantas2015[locs]), namean(meanrainfall2015[locs]), namea
 barley_stds = [nastd(meantas2015[locs]), nastd(meanrainfall2015[locs]), nastd(meansun2015[locs])]
 
 
-traits = JuliaDB.load("BSBI_had_prefs_UK")
+traits = JLD2.load("data/final/BSBI_had_prefs_UK.jld2", "bsbi_counts")
 traits = filter(t-> !isnan(t.sun) & !isnan(t.rainfall) & !isnan(t.tas_st) & !isnan(t.rain_st), traits)
 traits = filter(t -> (t.rain_st > 0) & (t.tas_st > 0), traits)
 
-push!(rows(traits), (NAME = "Beta vulgaris", tas = beet_means[1], rainfall = beet_means[2], sun = beet_means[3], tas_st = beet_stds[1], rain_st = beet_stds[2]))
-push!(rows(traits), (NAME = "Hordeum vulgare", tas = barley_means[1], rainfall = barley_means[2], sun = barley_means[3], tas_st = barley_stds[1], rain_st = barley_stds[2]))
-table(traits, pkey = :NAME, copy = false)
-JuliaDB.save(traits, "Crop_had_prefs_UK")
-
-crop_names = ["Beta vulgaris", "Vicia faba", "Grass", "Zea mays", "Brassica napus", "Other", "Solanum tuberosum", "Hordeum vulgare", "Triticum aestivum", "Hordeum vulgare", "Triticum aestivum"]
-cropids = [findall(x .== select(traits, :NAME)) for x in crop_names]
+append!(traits, DataFrame(NAME = "Beta vulgaris", tas = beet_means[1], rainfall = beet_means[2], sun = beet_means[3], tas_st = beet_stds[1], rain_st = beet_stds[2]))
+append!(traits, DataFrame(NAME = "Hordeum vulgare", tas = barley_means[1], rainfall = barley_means[2], sun = barley_means[3], tas_st = barley_stds[1], rain_st = barley_stds[2]))
+JLD2.@save "data/final/Crop_had_prefs_UK.jld2" traits

@@ -1,23 +1,25 @@
+using Revise
 using UKPlantData
 using UKPlantData.Units
 using CSV
 using DataFrames
+using DataFrameMacros
 using BritishNationalGrid
 using Unitful
 using Unitful.DefaultSymbols
 using AxisArrays
 using Statistics
 using Distributions
-using Diversity
 using Plots
+using JLD2
 
+## CALCULATE SIMULATION START POPULATIONS ##
 bsbi = CSV.read("data/raw/plantdata/PlantData_87to99.txt", DataFrame)
 species = CSV.read("data/raw/plantdata/PlantData_Species.txt", DataFrame)
 squares = CSV.read("data/raw/plantdata/PlantData_Squares.txt", DataFrame)
 bsbi = innerjoin(bsbi, squares, on = :OS_SQUARE)
 bsbi = innerjoin(bsbi, species, on = :TAXONNO)
 bsbi = rename(bsbi, :TAXONNO => :SppID)
-
 pa = CSV.read("data/raw/PLANTATT_19_Nov_08.csv", DataFrame)
 
 cross_species = bsbi.NAME ∩ pa."Taxon name"
@@ -25,30 +27,32 @@ bsbi = filter(b -> b.NAME ∈ cross_species, bsbi)
 
 # Create reference for UK grid
 ref = createRef(1000.0m, 500.0m, 7e5m, 500.0m, 1.3e6m)
-bsbi = transform(bsbi, (:refval => (:EAST, :NORTH) => x -> extractvalues(x[1] * m, x[2] * m, ref)))
-bsbi = insertcols(bsbi, 2, :refid => fill(1, length(bsbi)))
+bsbi = @transform(bsbi, :refval = extractvalues(:EAST* m, :NORTH * m, ref))
 
-start = startingArray(bsbi, length(species), 10)
+# Smooth out plant records across whole UK
+start = startingArray(bsbi, nrow(species), 10)
+JLD2.@save "data/final/StartArray.jld2" start
 
-abun = norm_sub_alpha(Metacommunity(start), 0.0)[:diversity]
+# Plot to check
+abun = sum(start .> 0, dims = 1)[1, :]
 abun = reshape(abun, 700, 1250)
 abun[isnan.(abun)] .= 0
-abun[.!active] .= NaN
-heatmap(transpose(abun), background_color = :lightblue, background_color_outside = :white,
-grid = false, color = :algae, aspect_ratio = 1)
+heatmap(abun', background_color = :lightblue, background_color_outside = :white, grid = false, color = :algae, aspect_ratio = 1)
 
 
-bsbi = transform(bsbi, :cr => :refval => x -> coarsenRef(x, 700, 10))
+# Repeat for Scotland
+start = startingArray(bsbi, length(species), 10, 1000.0m, 500.0m, 7e5m, 5e5m + 500m, 1.25e6m)
+JLD2.@save "Soil_StartArray.jld2" start
 
-@everywhere namean(x) = mean(x[.!isnan.(x)])
-@everywhere nastd(x) = std(x[.!isnan.(x)])
-@everywhere using Statistics
-dir = "data/HadUK/tas/"
-times = collect(2008year:1month:2017year+11month)
+## CALCULATE PLANT CLIMATE PREFS ##
+namean(x) = mean(x[.!isnan.(x)])
+nastd(x) = std(x[.!isnan.(x)])
+dir = "data/raw/HadUK/tas/"
+times = collect(2010year:1month:2017year+11month)
 tas = readHadUK(dir, "tas", times)
-dir = "data/HadUK/rainfall/"
+dir = "data/raw/HadUK/rainfall/"
 rainfall = readHadUK(dir, "rainfall", times)
-dir = "data/HadUK/sun/"
+dir = "data/raw/HadUK/sun/"
 sun = readHadUK(dir, "sun", times)
 
 # Take means of 2015 (same as for LC)
@@ -57,21 +61,26 @@ meanrainfall2015 = mapslices(mean, rainfall.array[:, :, 2015year..2015year+11mon
 meansun2015 = mapslices(mean, (uconvert.(kJ, 1km^2 .* sun.array[:, :, 2015year..2015year+11months] .* 1000*(W/m^2)))./kJ, dims = 3)[:, :, 1]
 
 # Extract reference values
-bsbi = transform(bsbi, (:tas => :refval => x -> meantas2015[x], :rainfall => :refval => x -> meanrainfall2015[x], :sun => :refval => x -> meansun2015[x]))
+bsbi = @transform(bsbi, :tas = meantas2015[:refval], :rainfall = meanrainfall2015[:refval], :sun =  meansun2015[:refval])
 
 # Calculate averages per species and plot as histogram
-bsbi_counts = collect(groupby((tas = :tas => namean, rainfall = :rainfall => namean, sun = :sun => namean, tas_st = :tas_st => nastd, rain_st = :rain_st => nastd), uk, :species))
-save(bsbi_counts, "BSBI_had_prefs_UK")
+bsbi_counts = @groupby(bsbi, :NAME)
+bsbi_counts = @combine(bsbi_counts, :tas = namean(:tas), :rainfall = namean(:rainfall), :sun = namean(:sun), 
+:tas_st = nastd(:tas), :rain_st = nastd(:rainfall))
+JLD2.@save "data/final/BSBI_had_prefs_UK.jld2" bsbi_counts
 
-lc = readLC("data/CEH_landcover_2015.tif")
-bsbi = transform(bsbi, :lc => :refval => x -> lc.array[x])
-LC_counts = collect(groupby(countmap, pr, :NAME, select = :lc))
-save(LC_counts, "BSBI_lc_prefs_uk")
+lc = readLC("data/raw/CEH_landcover_2015.tif")
+bsbi = @transform(bsbi, :lc = lc.array[:refval])
+lc_counts = @groupby(bsbi, :NAME)
+lc_counts = @combine(lc_counts, :lc = countmap(:lc))
+JLD2.@save "data/final/BSBI_lc_prefs_uk.jld2" lc_counts
 
-save(bsbi, "BSBI_prefs_UK")
+JLD2.@save "data/final/BSBI_prefs_UK.jld2" bsbi
 
-soils = readSoils("data/HuttonSoils.tif")
-bsbi = transform(bsbi, :soil => :refval => x -> soils.array[x])
-soil_counts = collect(groupby(unique, bsbi, :NAME, select =:soil))
-soil_counts = filter(s -> !all(isnan.(s.unique)), soil_counts)
-save(soil_counts, "BSBI_soil_prefs_uk")
+soils = readSoils("data/raw/HuttonSoils.tif")
+bsbi = @transform(bsbi, :soil = soils.array[:refval])
+soil_counts = @groupby(bsbi, :NAME)
+soil_counts = @combine(soil_counts, :soil = [unique(:soil)])
+soil_counts = filter(s -> !all(isnan.(s.soil)), soil_counts)
+soil_counts = @transform(soil_counts, :soil = Int.(:soil[.!isnan.(:soil)]))
+JLD2.@save "data/final/BSBI_soil_prefs_uk.jld2" soil_counts

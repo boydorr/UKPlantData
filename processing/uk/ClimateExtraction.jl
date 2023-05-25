@@ -1,125 +1,134 @@
-using UKplantSim
-using JuliaDB
+using UKPlantData
+using DataFrames
+using DataFrameMacros
 using Unitful
 using Unitful.DefaultSymbols
-using EcoSISTEM.Units
+using UKPlantData.Units
 using AxisArrays
-using EcoSISTEM.ClimatePref
 using StatsBase
+using CSV
+using JLD2
+using Distributions
 using Plots
 
 # Read in landcover 2015 data
-file = "data/CEH_landcover_2015.tif"
+file = "data/raw/CEH_landcover_2015.tif"
 lc = readLC(file)
 
 # Read in national plant monitoring scheme and attributes
-pr = readNPMS("data/records-2019-10-21/records-2019-10-21.csv")
-pa = readPlantATT("data/PLANTATT_19_Nov_08.csv")
+pr = CSV.read("data/raw/records-2019-10-21/records-2019-10-21.csv", DataFrame, normalizenames=true)
+pa = CSV.read("data/raw/PLANTATT_19_Nov_08.csv", DataFrame, normalizenames=true)
 
 # Check for overlap between species
-spp_pr = unique(select(pr, :Scientific_name))
-spp_pa = select(pa, :Taxon_name)
+spp_pr = unique(pr.Scientific_name)
+spp_pa = pa.Taxon_name
 cross_species = spp_pr ∩ spp_pa
 
 # Filter for overlap and convert OSGR into northing/easting
 pr = filter(p -> p.Scientific_name ∈ cross_species, pr)
 pr = filter(p -> p.OSGR_1km != "", pr)
+@transform!(pr, :OSGR_1km = String.(:OSGR_1km))
 pa = filter(p -> p.Taxon_name ∈ cross_species, pa)
-pr = transform(pr, (:east => :OSGR_1km => x -> OSGR_eastnorth(x)[1], :north => :OSGR_1km => x -> OSGR_eastnorth(x)[2]))
+pr = @transform(pr, :east = OSGR_eastnorth(:OSGR_1km)[1], :north = OSGR_eastnorth(:OSGR_1km)[2])
 
 # Extract grid values as reference
 ref = createRef(1000.0m, 1000.0m, 7e5m, 1000.0m, 1.3e6m)
-n = select(pr, :north) .* m; e = select(pr, :east).* m
-pr = transform(pr, :refval => (:east, :north) => x -> extractvalues(x[1] * m, x[2] * m, ref))
+pr = @transform(pr, :refval = extractvalues(:east * m, :north * m, ref))
 
 # Extract lc values
-pr = transform(pr, :lc => :refval => x -> lc.array[x])
-LC_counts = groupby(countmap, pr, :Scientific_name, select = :lc)
-
-# Plot as barplot
-counts = select(LC_counts, :countmap)
-plot(counts)
-Plots.pdf("plots/LC_types_UK.pdf")
+pr = @transform(pr, :lc = lc.array[:refval])
+LC_counts = @groupby(pr, :Scientific_name)
+LC_counts = @combine(LC_counts, :lc = countmap(:lc))
 
 namean(x) = mean(x[.!isnan.(x)])
+nastd(x) = std(x[.!isnan.(x)])
 # Load HadUK temperature and rainfall
-dir = "data/HadUK/tas/"
+dir = "data/raw/HadUK/tas/"
 times = collect(2010year:1month:2017year+11month)
 tas = readHadUK(dir, "tas", times)
-dir = "data/HadUK/rainfall/"
+dir = "data/raw/HadUK/rainfall/"
 rainfall = readHadUK(dir, "rainfall", times)
+dir = "data/raw/HadUK/sun/"
+sun = readHadUK(dir, "sun", times)
 
 # Take means of 2015 (same as for LC)
 meantas2015 = mapslices(namean, tas.array[:, :, 2015year..2015year+11months]./K, dims = 3)[:, :, 1]
 meanrainfall2015 = mapslices(namean, rainfall.array[:, :, 2015year..2015year+11months]./mm, dims = 3)[:, :, 1]
+meansun2015 = mapslices(mean, (uconvert.(kJ, 1km^2 .* sun.array[:, :, 2015year..2015year+11months] .* 1000*(W/m^2)))./kJ, dims = 3)[:, :, 1]
 
 # Extract reference values
 ref = createRef(1000.0m, 500.0m, 7e5m, 500.0m, 1.25e6m)
-n = select(pr, :north) .* m; e = select(pr, :east).* m
-pr = transform(pr, :refval => (:east, :north) => x -> extractvalues(x[1] * m, x[2] * m, ref))
-pr = transform(pr, (:tas => :refval => x -> meantas2015[x], :rainfall => :refval => x -> meanrainfall2015[x]))
+pr = @transform(pr, :refval = extractvalues(:east * m, :north * m, ref))
+pr = @transform(pr, :tas = meantas2015[:refval], :rainfall = meanrainfall2015[:refval], :sun =  meansun2015[:refval])
 
 # Calculate averages per species and plot as histogram
-had_counts = groupby((tas = :tas => namean, rainfall = :rainfall => namean), pr, :Scientific_name)
-histogram(ustrip.(uconvert.(°C, select(had_counts, :tas).*K)), grid = false, layout = (@layout [a; b]), xlabel = "Mean temperature (°C)", legend = false, guidefontsize = 12, tickfontsize = 12, size = (1000, 1200))
-histogram!(select(had_counts, :rainfall), grid = false, subplot = 2, xlabel = "Rainfall (mm)", legend = false, guidefontsize = 12, tickfontsize = 12, color = 2)
-Plots.pdf("plots/Climate_prefs_UK.pdf")
+had_counts = @groupby(pr, :Scientific_name)
+had_counts = @combine(had_counts, :tas = namean(:tas), :rainfall = namean(:rainfall), :sun = namean(:sun),
+:tas_st = nastd(:tas), :rain_st = nastd(:rainfall))
+JLD2.@save "data/final/NBN_atlas_prefs_UK.jld2" had_counts
 
+sppDict = Dict(zip(cross_species, 1:length(cross_species)))
+@transform!(pr, :SppID = sppDict[:Scientific_name])
+start = startingArray(pr, length(cross_species), 10)
 
-## Alternatively extract from GBIF
-using UKplantSim
-using JuliaDB
-using BritishNationalGrid
-using Unitful
-using EcoSISTEM.Units
-using Unitful.DefaultSymbols
-using AxisArrays
-using Statistics
+# Correct for collection effort - population density
+start2 = Float64.(start)
+file = "data/final/UK_density.tif"
+density = Array{Float64, 2}(readfile(file, 0.0m, 7e5m, 5e5m, 1.25e6m))
+density[isnan.(density)] .= 0
+density[density .== 0] .= 1
+file = "data/raw/UK.tif"
+outline = Array{Float64, 2}(readfile(file, 0.0m, 7e5m, 5e5m, 1.25e6m))
+density[outline .== 0] .= NaN
+for i in 1:size(start, 1)
+    start2[i, :] ./= density[1:end]
+end
+start2[isnan.(start2)] .= 0
+start2 = rand.(Poisson.(start2))
 
-@everywhere using BritishNationalGrid
-@everywhere using Unitful.DefaultSymbols
+abun = sum(start2, dims = 1)[1, :]
+abun = reshape(abun, 700, 1250)
+heatmap(abun', background_color = :lightblue, background_color_outside = :white, grid = false, color = :algae, aspect_ratio = 1)
 
-retrieve_HadUK("tas", 2010, 2017, "HadUK/tas")
-retrieve_HadUK("rainfall", 2010, 2017, "../rainfall")
-retrieve_HadUK("sun", 2010, 2017, "../sun")
-retrieve_HadUK("groundfrost", 2010, 2017, "../groundfrost")
-retrieve_HadUK("snowLying", 2010, 2017, "../snow")
+JLD2.@save "data/final/StartArrayNBN.jld2" start2
+
+## Alternatively extract from GBIF on workstation
 
 # For workstation - filter GBIF records to UK
-gbif = load("GBIF_TPL")
-uk = filter(g -> (g.decimallatitude > 50.0) & (g.decimallatitude < 58.7) & (g.decimallongitude > -7.6) & (g.decimallongitude < 1.7), gbif)
-save(ukspecies, "UKgbif")
-uk = load("UKgbif")
-pa = readPlantATT("PLANTATT_19_Nov_08.csv")
-spp_names = collect(select(pa, :Taxon_name))
-ukspecies = filter(g-> g.species in spp_names, uk)
-save(ukspecies, "UKspecies")
+gbif = CSV.read("data/raw/0025546-190918142434337.csv", DataFrame)
+JLD2.@save "data/final/UKgbif.jld2"
+
+pa = CSV.read("data/raw/PLANTATT_19_Nov_08.csv", DataFrame, normalizenames=true)
+spp_names = pa.Taxon_name
+ukspecies = filter(g-> g.species in spp_names, gbif)
+JLD2.@save "UKspecies.jld2" ukspecies
 
 # Load UK gbif data and transform to national grid
-uk = load("UKspecies")
-uk = transform(uk, (:east => (:decimallatitude, :decimallongitude) => x -> BNGPoint(lon = x[2], lat = x[1]).e, :north => (:decimallatitude, :decimallongitude) => x -> BNGPoint(lon = x[2], lat = x[1]).n))
+uk = JLD2.load("UKspecies.jld2", "ukspecies")
+uk = @transform(uk, (:east = BNGPoint(lon = :decimallongitude, lat = :decimallatitude).e, :north = BNGPoint(lon = :decimallongitude, lat = :decimallatitude).n))
 
 # Create reference for UK grid
 ref = createRef(1000.0m, 1000.0m, 7e5m, 1000.0m, 1.3e6m)
-uk = transform(uk, :refval => (:east, :north) => x -> extractvalues(x[1] * m, x[2] * m, ref))
+uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
 
 # Read in landcover 2015 data
-file = "CEH_landcover_2015.tif"
+file = "data/raw/CEH_landcover_2015.tif"
 lc = readLC(file)
 
-uk = transform(uk, :lc => :refval => x-> lc.array[x])
-LC_counts = groupby(countmap, pr, :Scientific_name, select = :lc)
-save(LC_counts, "GBIF_LC_prefs_UK")
+uk = @transform(uk, :lc = lc.array[:refval])
+LC_counts = @groupby(pr, :Scientific_name)
+LC_counts = @combine(LC_counts, :lc = countmap(:lc))
+@save "data/final/GBIF_LC_prefs_UK.jld2" LC_counts
 
 @everywhere namean(x) = mean(x[.!isnan.(x)])
 @everywhere nastd(x) = std(x[.!isnan.(x)])
 @everywhere using Statistics
-dir = "HadUK/tas/"
+dir = "data/raw/HadUK/tas/"
 times = collect(2010year:1month:2017year+11month)
 tas = readHadUK(dir, "tas", times)
-dir = "HadUK/rainfall/"
+dir = "data/raw/HadUK/rainfall/"
 rainfall = readHadUK(dir, "rainfall", times)
-dir = "HadUK/sun/"
+dir = "data/raw/HadUK/sun/"
 sun = readHadUK(dir, "sun", times)
 
 # Take means of 2015 (same as for LC)
@@ -129,22 +138,30 @@ meansun2015 = mapslices(mean, (uconvert.(kJ, 1km^2 .* sun.array[:, :, 2015year..
 
 # Extract reference values
 ref = createRef(1000.0m, 500.0m, 7e5m, 500.0m, 1.25e6m)
-uk = transform(uk, :refval => (:east, :north) => x -> extractvalues(x[1] * m, x[2] * m, ref))
-uk = transform(uk, (:tas => :refval => x -> meantas2015[x], :rainfall => :refval => x -> meanrainfall2015[x], :sun => :refval => x -> meansun2015[x]))
+uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
+uk = @transform(uk, :tas = meantas2015[:refval], :rainfall = meanrainfall2015[:refval], :sun =  meansun2015[:refval])
 
 # Calculate averages per species and plot as histogram
-had_counts = collect(groupby((tas = :tas => namean, rainfall = :rainfall => namean, sun = :sun => namean, tas_st = :tas_st => nastd, rain_st = :rain_st => nastd), uk, :species))
-save(had_counts, "GBIF_had_prefs_UK")
+had_counts = @groupby(UK, :Scientific_name)
+had_counts = @combine(had_counts, :tas = namean(:tas), :rainfall = namean(:rainfall), :sun = namean(:sun),
+:tas_st = nastd(:tas), :rain_st = nastd(:rainfall))
+JLD2.@save "data/final/GBIF_had_prefs_UK.jld2" had_counts
 
+sppDict = Dict(zip(cross_species, 1:length(cross_species)))
+@transform!(uk, :SppID = sppDict[:Scientific_name])
+start = startingArray(uk, length(cross_species), 10)
+file = "data/final/UK_density.tif"
+start2 = Float64.(start)
+density = Array{Float64, 2}(readfile(file, 0.0m, 7e5m, 5e5m, 1.25e6m))
+density[density .== 0] .= 1
+for i in 1:size(start, 1)
+    start2[i, :] ./= density[1:end]
+end
+start2[isnan.(start2)] .= 0
+start2 = rand.(Poisson.(start2))
 
+abun = sum(start2, dims = 1)[1, :]
+abun = reshape(abun, 700, 1250)
+heatmap(abun', background_color = :lightblue, background_color_outside = :white, grid = false, color = :algae, aspect_ratio = 1)
 
-LC_counts = load("data/GBIF_LC_prefs_UK")
-had_counts = load("data/GBIF_had_prefs_UK")
-
-histogram(ustrip.(uconvert.(°C, select(had_counts, :tas).*K)), grid = false, layout = (@layout [a; b]), xlabel = "Mean temperature (°C)", legend = false, guidefontsize = 12, tickfontsize = 12, size = (1000, 1200))
-histogram!(select(had_counts, :rainfall), grid = false, subplot = 2, xlabel = "Rainfall (mm)", legend = false, guidefontsize = 12, tickfontsize = 12, color = 2)
-Plots.pdf("plots/GBIF_climate_prefs_UK.pdf")
-
-counts = countmap(vcat(select(LC_counts, :lc)...))
-plot(counts)
-Plots.pdf("plots/GBIF_LC_types_UK.pdf")
+JLD2.@save "data/final/StartArrayNBN.jld2" start
