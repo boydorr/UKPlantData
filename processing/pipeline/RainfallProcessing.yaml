@@ -1,0 +1,37 @@
+run_metadata:
+  default_input_namespace: claireh93
+  description: Peatland Model inputs
+  script: |
+    julia --project=processing/peatland processing/peatland/Rainfall.jl
+
+register:
+- namespace: CEDA
+  full_name: Centre for Environmental Data Analysis
+  website: https://ror.org/04j4kad11
+
+- external_object: PeatModel/rainfall
+  namespace_name: CEDA
+  root: https://dap.ceda.ac.uk/
+  path: badc/deposited2021/chess-scape/data/rcp85_bias-corrected/01/monthly/chess-scape_rcp85_bias-corrected_01_pr_uk_1km_monthly_19801201-20801130.nc
+  title: UKCP RCP 8.5 rainfall 2010 - 2080
+  description: Projected rainfall for the UK at 1km resolution under RCP 8.5.
+  identifier: https://doi.org/10.1038/s41592-020-0856-2
+  file_type: nc
+  release_date: 2022-03-28T12:00
+  version: "1.0.0"
+  primary: True
+  authors: 
+  - https://ror.org/04j4kad11
+
+write:
+- data_product: RainfallFuture
+  description: Rainfall water budget 2010 - 2080
+  file_type: jld2
+  use: 
+    data_product: PeatModel/RainfallFuture
+
+- data_product: RainfallBurnin
+  description: Rainfall water budget 2010 - 2020
+  file_type: jld2
+  use: 
+    data_product: PeatModel/RainfallBurnin

@@ -1,0 +1,78 @@
+run_metadata:
+  default_input_namespace: testing
+  description: UK model inputs
+  script: |
+    julia --project=processing/uk processing/uk/CSVprocessing.jl
+
+register:
+- namespace: BRC
+  full_name: Biological Records Centre
+  website: https://www.brc.ac.uk/
+- namespace: GBIF
+  full_name: Global Biodiversity Information Facility
+  website: https://ror.org/05fjyn938
+
+- external_object: UKModel/PLANTATT
+  namespace_name: BRC
+  root: https://www.brc.ac.uk/
+  path: sites/default/files/biblio/PLANTATT_19_Nov_08.zip
+  title: PLANTATT - Attributes of British and Irish Plants
+  description: Status, Size, Life History, Geography and Habitats
+  identifier: https://www.brc.ac.uk/biblio/plantatt-attributes-british-and-irish-plants-spreadsheet
+  file_type: zip
+  release_date: 2022-03-28T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/00pggkr55
+
+- external_object: UKModel/BRYOATT
+  namespace_name: BRC
+  root: https://www.brc.ac.uk/
+  path: sites/default/files/biblio/Bryoatt_updated_2017_0.zip
+  title: BRYOATT - Attributes of British and Irish Mosses, Liverworts and Hornworts
+  description: Status, Size, Life History, Geography and Habitats
+  identifier: https://www.brc.ac.uk/biblio/bryoatt-attributes-british-and-irish-mosses-liverworts-and-hornworts-spreadsheet
+  file_type: zip
+  release_date: 2022-03-28T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/00pggkr55
+
+- external_object: UKModel/GBIF-raw
+  namespace_name: GBIF
+  root: https://api.gbif.org/v1/occurrence/download/request/
+  path: 0025546-190918142434337.zip
+  title: UK GBIF records
+  description: All GBIF occurrence records for plants in the UK
+  identifier: https://doi.org/10.15468/dl.qvqtjf
+  file_type: zip
+  release_date: 2019-10-21T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/05fjyn938
+
+
+write:
+- data_product: PLANTATT-data
+  description: Attributes of British and Irish Plants
+  file_type: csv
+  use: 
+    data_product: UKModel/PLANTATT-data
+
+- data_product: BRYOATT-data
+  description: Attributes of British and Irish Mosses
+  file_type: csv
+  use: 
+    data_product: UKModel/BRYOATT-data
+
+- data_product: GBIF-records
+  description: All GBIF plant occurrences in the UK
+  file_type: csv
+  use: 
+    data_product: UKModel/GBIF-records
+
+
+

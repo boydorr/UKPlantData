@@ -1,0 +1,6 @@
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DataPipeline = "9ced6f0a-eb77-43a8-bbd1-bbf3031b0d12"
+ExcelFiles = "89b67f3b-d1aa-5f6f-9ca4-282e8d98620d"
+ExcelReaders = "c04bee98-12a5-510c-87df-2a230cb6e075"

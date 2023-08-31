@@ -1,0 +1,18 @@
+run_metadata:
+  default_input_namespace: claireh93
+  description: Peatland model inputs
+  script: |
+    julia --project=processing/peatland processing/peatland/Moss_data.jl
+
+read:
+- data_product: PeatModel/PrioritySpecies
+- data_product: UKModel/BRYOATT-data
+- data_product: PeatModel/CFspecies
+- data_product: PeatModel/NBNspecies
+
+write:
+- data_product: Moss30spp
+  description: 30 priority moss species occurring in Cors Fochno and their attributes
+  file_type: jld
+  use: 
+    data_product: PeatModel/Moss30spp

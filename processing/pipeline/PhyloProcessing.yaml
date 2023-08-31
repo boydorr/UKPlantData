@@ -1,0 +1,16 @@
+run_metadata:
+  default_input_namespace: claireh93
+  description: Peatland phylo processing
+  script: |
+    julia --project=processing/peatland processing/peatland/Phylo.jl
+
+read:
+- data_product: PeatModel/Priority30Species
+- data_product: UKModel/QianTree
+
+write:
+- data_product: Peat30spp
+  description: 30 priority angiosperm species occurring in Cors Fochno and their attributes
+  file_type: jld2
+  use: 
+    data_product: PeatModel/Peat30spp

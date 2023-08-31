@@ -1,0 +1,98 @@
+run_metadata:
+  description: Registering internal plant data
+  default_input_namespace: claireh93
+  script: |
+    echo "Done!"
+
+register:
+- data_product: PeatModel/Priority30Species
+  description: Extracted trait data on 30 priority peatland species
+  file_type: csv
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: Peatland30spp.csv
+  authors:
+  - https://ror.org/039zvsn29 # NHM
+  - https://ror.org/04tqfmc02 # BHL
+  - https://orcid.org/0000-0001-7769-4395 # Neil
+  - https://orcid.org/0000-0002-5590-7174 # Ben
+
+- data_product: PeatModel/PrioritySpecies
+  description: List of 600 priority species for UK peatlands
+  file_type: csv
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: Peatland_species.csv
+  authors:
+  - https://ror.org/039zvsn29 # NHM
+  - https://orcid.org/0000-0001-7769-4395 # Neil
+
+- data_product: PeatModel/NBNspecies
+  description: List of bryophyte species found on Cors Fochno on the NBN Gateway as part of the National Plant Monitoring Scheme
+  file_type: csv
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: records-2022-09-01.csv
+  authors:
+  - https://ror.org/00mcxye41 #NBN
+
+- data_product: PeatModel/CFspecies
+  description: List of bryophyte species found on Cors Fochno from NRW reports
+  file_type: csv
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: CF_bryophytes.csv
+  authors:
+  - https://ror.org/04x65hs26 #NRW
+
+- data_product: PeatModel/Outline
+  description: Outline of the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: CF_outline.tif
+  authors:
+  - https://orcid.org/0000-0003-0852-2340 # Me
+
+- data_product: PeatModel/Ditches
+  description: Outline of ditches on the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: Ditches_full.tif
+  authors:
+  - https://orcid.org/0000-0003-0852-2340 # Me
+
+- data_product: PeatModel/Rivers
+  description: Outline of rivers on the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: MainRivers.tif
+  authors:
+  - https://ror.org/04x65hs26 # NRW
+
+- data_product: PeatModel/Elevation
+  description: Raster of elevation on the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/final/
+  path: CF_elevation_smooth.tif
+  authors:
+  - https://ror.org/04x65hs26 # NRW
+
+- data_product: PeatModel/TPI
+  description: Raster of topographic wetness index on the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/final/
+  path: CF_TPI_smooth.tif
+  authors:
+  - https://ror.org/04x65hs26 # NRW
+
+- data_product: PeatModel/LCM
+  description: Raster of land cover on the Cors Fochno site
+  file_type: tif
+  root: file://D:/GIT/UKPlantData/data/final/
+  path: LCM.tif
+  authors:
+  - https://ror.org/00pggkr55 # CEH
+
+- data_product: UKModel/QianTree
+  description: An updated megaphylogeny of plants, a tool for generating plant phylogenies and an analysis of phylogenetic community structure
+  file_type: tree
+  root: file://D:/GIT/UKPlantData/data/raw/
+  path: Qian2016.tree
+  authors:
+  - https://orcid.org/0000-0002-1381-7496 # Qian
