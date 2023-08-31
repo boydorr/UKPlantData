@@ -1,0 +1,89 @@
+run_metadata:
+  default_input_namespace: claireh93
+  description: UK model inputs
+  script: |
+    julia --project=processing/uk processing/uk/processUK.jl
+
+register:
+- namespace: MetOffice
+  full_name: Meteorological Office
+  website: https://ror.org/01ch2yn61
+- namespace: UKCEH
+  full_name: UK Centre for Ecology and Hydrology
+  website: https://ror.org/00pggkr55
+
+- external_object: UKModel/HadUK-tas
+  namespace_name: MetOffice
+  root: https://dap.ceda.ac.uk/
+  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/tas/mon/v20220310/tas_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
+  title: HadUK-Grid
+  description: Gridded and regional average average temperature observations for the UK, 2021
+  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
+  file_type: nc
+  release_date: 2018-10-21T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/01ch2yn61
+
+- external_object: UKModel/HadUK-sun
+  namespace_name: MetOffice
+  root: https://dap.ceda.ac.uk/
+  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/sun/mon/v20220310/sun_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
+  title: HadUK-Grid
+  description: Gridded and regional average solar radition observations for the UK, 2021
+  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
+  file_type: nc
+  release_date: 2018-10-21T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/01ch2yn61
+
+- external_object: UKModel/HadUK-rain
+  namespace_name: MetOffice
+  root: https://dap.ceda.ac.uk/
+  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/rainfall/mon/v20220310/rainfall_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
+  title: HadUK-Grid
+  description: Gridded and regional average rainfall observations for the UK, 2021
+  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
+  file_type: nc
+  release_date: 2018-10-21T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/01ch2yn61
+
+- external_object: UKModel/LCM
+  namespace_name: UKCEH
+  root: https://data-package.ceh.ac.uk/
+  path: data/a3ff9411-3a7a-47e1-9b3e-79f21648237d.zip
+  title: Land Cover Map 2021
+  description: 1km summary rasters, GB and N. Ireland
+  identifier: https://doi.org/10.5285/a3ff9411-3a7a-47e1-9b3e-79f21648237d
+  file_type: zip
+  release_date: 2022-10-21T12:00
+  version: "1.0.0"
+  primary: True
+  authors:
+  - https://ror.org/00pggkr55
+
+read:
+- data_product: UKModel/GBIF-records
+- data_product: UKModel/PLANTATT-data
+
+write:
+- data_product: LCM-prefs
+  description: All GBIF plant species LC preferences
+  file_type: jld2
+  use: 
+    data_product: UKModel/LCM-prefs
+
+- data_product: Had-prefs
+  description: All GBIF plant species HadUK preferences
+  file_type: jld2
+  use: 
+    data_product: UKModel/Had-prefs
+
+
+

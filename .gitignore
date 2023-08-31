@@ -1,2 +1,6 @@
 .fair
 *.nc
+*.csv
+*.tif
+*.xls
+*.asc

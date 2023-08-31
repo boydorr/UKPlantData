@@ -54,7 +54,6 @@ register:
   authors:
   - https://ror.org/05fjyn938
 
-
 write:
 - data_product: PLANTATT-data
   description: Attributes of British and Irish Plants
