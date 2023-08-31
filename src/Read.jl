@@ -4,6 +4,7 @@ using UKPlantData.Units
 using AxisArrays
 using NetCDF
 using JLD2
+# using ZipFile
 
 import Unitful.°, Unitful.°C, Unitful.mm
 import ArchGDAL
@@ -66,6 +67,40 @@ end
 Function to search a directory `path` using a given `key` string.
 """
 searchdir(path,key) = filter(x->occursin(key, x), readdir(path))
+
+# function unzip(file, exdir=mktempdir())
+#     fileFullPath = isabspath(file) ? file : joinpath(pwd(),file)
+#     basePath = dirname(fileFullPath)
+#     outPath = (exdir == "" ? basePath : (isabspath(exdir) ? exdir : joinpath(pwd(),exdir)))
+#     isdir(outPath) ? "" : mkdir(outPath)
+#     zarchive = ZipFile.Reader(fileFullPath)
+#     for f in zarchive.files
+#         if !occursin("__MACOSX", f.name)
+#             fullFilePath = joinpath(outPath, f.name)
+#             if (endswith(f.name, "/") || endswith(f.name,"\\"))
+#                 mkpath(fullFilePath)
+#             else
+#                 write(fullFilePath, read(f))
+#             end
+#         end
+#     end
+#     close(zarchive)
+#     return outPath 
+# end
+
+# function find_file(zip_file, regex = r"\.xlsx?"i)
+#     folder = unzip(zip_file)
+#     for (root, _, files) in walkdir(folder)
+#         for file in files
+#             if endswith(file, regex)
+#                 return joinpath(root, file)
+#             end
+#         end
+#     end
+#     return nothing
+# end
+    
+    
 
 """
     readlc(file::String)
@@ -192,9 +227,9 @@ function readCHESS(file::String, param::String)
     y = ncread(file, "y")
     time = ncread(file, "time") * 1.0
     timeunits = ncgetatt(file, "time", "units")
-    time = uconvert.(years, time .* NEWUNITDICT[timeunits] .+ 1970years)
+    time = uconvert.(years, time .* unitdict[timeunits] .+ 1970years)
     units = ncgetatt(file, param, "units")
-    units = NEWUNITDICT[units]
+    units = unitdict[units]
     array = ncread(file, param) * 1.0
     array[array .≈ ncgetatt(file, param, "_FillValue")] .= NaN
     
@@ -208,10 +243,10 @@ function readCHESS(file::String, param::String, times::Vector{T}, xs::Vector{L},
     select_ys = findall((y .>= ys[1]) .& (y .<= ys[end]))
     time = ncread(file, "time") * 1.0
     timeunits = ncgetatt(file, "time", "units")
-    time = uconvert.(years, time .* NEWUNITDICT[timeunits] .+ 1970years)
+    time = uconvert.(years, time .* unitdict[timeunits] .+ 1970years)
     select_times = findall((time .>= times[1]) .& (time .<= times[end]))
     units = ncgetatt(file, param, "units")
-    units = NEWUNITDICT[units]
+    units = unitdict[units]
    
     array = NetCDF.readvar(NetCDF.open(file), param, start=[minimum(select_xs), minimum(select_ys), minimum(select_times)],count = [length(select_xs),length(select_ys), length(select_times)])
     array[array .≈ ncgetatt(file, param, "_FillValue")] .= NaN

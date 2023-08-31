@@ -1,15 +1,19 @@
 using PhyloNetworks
-using PhyloPlots
 using CSV
 using DataFrames
 using GLM
 using JLD2
+using Statistics
+using DataPipeline
 
-peat_spp = CSV.File("data/Peatland30spp.csv", normalizenames=true)
+handle = DataPipeline.initialise()
+path = link_read!(handle, "PeatModel/Priority30Species")
+peat_spp = CSV.File(path, normalizenames=true, stringtype = String)
 peat_spp = DataFrame(peat_spp)
 peat_spp[!, :Plant_height_m_]
 
-tree = readTopology("data/Qian2016.tree")
+path = link_read!(handle, "UKModel/QianTree")
+tree = readTopology(path)
 tipnames = tipLabels(tree)
 tip_names = join.(split.(tipnames, "_"), " ")
 
@@ -51,13 +55,13 @@ expect = expectations(recon)
 peat_spp[!, :Leaf_length] = expect[indexin(peat_spp[!, :tipNums], expect[!, :nodeNumber]), :condExpectation]
 
 f = @formula(Root_depth_max ~ 1)
-fitdiscrete(tree, :ERSM, peat_spp[!, :Species], peat_spp[!, [:Species, :Root_depth_max]])
 fitPagel = phylolm(f, peat_spp, tree, model="lambda")
 lambda_estim(fitPagel)
 recon = ancestralStateReconstruction(peat_spp[!, [:tipNames, :Root_depth_max]], tree)
 expect = expectations(recon)
 peat_spp[!, :Root_depth_max] = expect[indexin(peat_spp[!, :tipNums], expect[!, :nodeNumber]), :condExpectation]
 
-PhyloPlots.plot(tree, :R, nodeLabel = expectationsPlot(recon))
-JLD2.save("data/Peat_30_spp.jld2", "peat_spp", peat_spp)
+path = link_write!(handle, "Peat30spp")
+@save path peat_spp
 
+DataPipeline.finalise(handle)
