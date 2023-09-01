@@ -54,17 +54,11 @@ register:
   authors:
   - https://ror.org/01ch2yn61
 
-- external_object: UKModel/LCM
-  namespace_name: UKCEH
-  root: https://data-package.ceh.ac.uk/
-  path: data/a3ff9411-3a7a-47e1-9b3e-79f21648237d.zip
-  title: Land Cover Map 2021
-  description: 1km summary rasters, GB and N. Ireland
-  identifier: https://doi.org/10.5285/a3ff9411-3a7a-47e1-9b3e-79f21648237d
-  file_type: zip
-  release_date: 2022-10-21T12:00
-  version: "1.0.0"
-  primary: True
+- data_product: UKModel/LCM
+  description: Land Cover Map 2021
+  file_type: tif
+  root: data/raw/
+  path: gb2021lcm1km_dominant_aggregate.tif
   authors:
   - https://ror.org/00pggkr55
 
