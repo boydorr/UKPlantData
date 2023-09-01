@@ -35,7 +35,7 @@ uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
 
 # Read in landcover 2015 data
 path = link_read!(handle, "UKModel/LCM")
-lc = readLC(newfile)
+lc = readLC(path)
 
 uk = @transform(uk, :lc = lc.array[:refval])
 LC_counts = @groupby(uk, :species)
