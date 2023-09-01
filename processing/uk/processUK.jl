@@ -35,7 +35,7 @@ uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
 
 # Read in landcover 2015 data
 path = link_read!(handle, "UKModel/LCM")
-zippath = joinpath(splitpath(file)[1:end-1])
+zippath = joinpath(splitpath(path)[1:end-1])
 run(`tar xvf $path -C $zippath`)
 newfile = zippath
 lc = readLC(newfile)
