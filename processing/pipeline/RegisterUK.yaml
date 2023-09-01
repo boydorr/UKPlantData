@@ -2,8 +2,7 @@ run_metadata:
   default_input_namespace: claireh93
   description: UK model inputs
   script: |
-    sudo julia --project=processing/uk -e "using Pkg; Pkg.instantiate()"
-    julia --project=processing/uk processing/uk/processUK.jl
+    sudo julia --project=processing/uk processing/uk/processUK.jl
 
 register:
 - namespace: MetOffice
