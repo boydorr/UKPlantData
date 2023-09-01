@@ -21,7 +21,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.0"
+  version: "1.0.1"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
@@ -35,7 +35,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.0"
+  version: "1.0.1"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
@@ -49,7 +49,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.0"
+  version: "1.0.1"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
