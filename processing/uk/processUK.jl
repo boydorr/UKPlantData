@@ -1,5 +1,3 @@
-using Pkg
-Pkg.instantiate()
 using UKPlantData
 using DataFrames
 using DataFrameMacros
