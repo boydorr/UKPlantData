@@ -10,7 +10,7 @@ xlspath = joinpath(splitpath(path)[1:end-1])
 if Sys.iswindows()
     run(`tar xvf $path -C $xlspath`)
 else
-    run(`unzip $path`)
+    run(`unzip $path -d $xlspath`)
 end
 xlspath = joinpath(xlspath, "PLANTATT_19_Nov_08.xls")
 data = DataFrame(ExcelFiles.load(xlspath, "Data"))
@@ -23,7 +23,7 @@ xlspath = joinpath(splitpath(path)[1:end-1])
 if Sys.iswindows()
     run(`tar xvf $path -C $xlspath`)
 else
-    run(`unzip $path`)
+    run(`unzip $path -d $xlspath`)
 end
 xlspath = joinpath(xlspath, "Bryoatt_updated_2017/Bryoatt_updated_2017.xls")
 data = DataFrame(ExcelFiles.load(xlspath, "BRYOATT"))
@@ -36,7 +36,7 @@ zippath = joinpath(splitpath(path)[1:end-1])
 if Sys.iswindows()
     run(`tar xvf $path -C $zippath`)
 else
-    run(`unzip $path`)
+    run(`unzip $path -d $zippath`)
 end
 data = CSV.read(joinpath(zippath, "0025546-190918142434337.csv"), DataFrame, normalizenames=true)
 newpath = link_write!(handle, "GBIF-records")
