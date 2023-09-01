@@ -197,6 +197,23 @@ function readHadUK(dir::String, param::String, times::Vector{T}) where T<: Unitf
     return HadUK(uk[0.0m..1e6m, 0.0m..1.25e6m, :])
 end
 
+function readHadUK(file::String, param::String, times::Vector{T}) where T<: Unitful.Time
+    lat = ncread(file, "projection_y_coordinate")
+    lon = ncread(file, "projection_x_coordinate")
+    units = ncgetatt(file, param, "units")
+    units = unitdict[units]
+    array = ncread(file, param)
+    array[array .≈ ncgetatt(file, param, "_FillValue")] .= NaN
+    array = array * 1.0 * units
+
+    # If temperature param, need to convert from Kelvin
+    if typeof(units) <: Unitful.TemperatureUnits
+        array = uconvert.(K, array)
+    end
+    uk = AxisArray(array, Axis{:easting}(lon * m), Axis{:northing}(lat * m), Axis{:month}(times))
+    return HadUK(uk[0.0m..1e6m, 0.0m..1.25e6m, :])
+end
+
 """
     readCHESS(file::String)
 
