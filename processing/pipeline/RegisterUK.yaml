@@ -21,7 +21,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.1"
+  version: "1.0.2"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
@@ -35,7 +35,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.1"
+  version: "1.0.2"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
@@ -49,7 +49,7 @@ register:
   identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
   release_date: 2018-10-21T12:00
-  version: "1.0.1"
+  version: "1.0.2"
   primary: True
   authors:
   - https://ror.org/01ch2yn61
@@ -57,7 +57,7 @@ register:
 - data_product: UKModel/LCM
   description: Land Cover Map 2021
   file_type: tif
-  root: data/raw/
+  root: file:///home/claireh/Documents/GIT/UKPlantData/data/raw/
   path: gb2021lcm1km_dominant_aggregate.tif
   authors:
   - https://ror.org/00pggkr55
