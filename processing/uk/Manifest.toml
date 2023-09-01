@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "5fbceb8a2f763c532502980c7e4ef17e28c1ad70"
+project_hash = "41bde030f0b7d7b533cd7926df751a65666685fb"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -281,10 +281,8 @@ uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 version = "1.6.1"
 
 [[deps.DataPipeline]]
-deps = ["AxisArrays", "CSV", "DataFrames", "Dates", "HTTP", "JSON", "NetCDF", "Plots", "PrettyTables", "SHA", "SQLite", "TOML", "URIs", "UnicodePlots", "YAML"]
-git-tree-sha1 = "9cdcffc36c465238474298d63bf0a12ee61c467e"
-repo-rev = "rr/netcdf"
-repo-url = "../../../DataPipeline"
+deps = ["AxisArrays", "CSV", "DataFrames", "Dates", "FTPClient", "HDF5", "HTTP", "JSON", "NetCDF", "Plots", "PrettyTables", "SHA", "SQLite", "TOML", "URIs", "UnicodePlots", "YAML"]
+git-tree-sha1 = "9002581ac7bb2b9944cf598d09622997b3cd83ed"
 uuid = "9ced6f0a-eb77-43a8-bbd1-bbf3031b0d12"
 version = "0.53.2"
 
@@ -434,6 +432,12 @@ deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers",
 git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.2+2"
+
+[[deps.FTPClient]]
+deps = ["LibCURL", "URIParser"]
+git-tree-sha1 = "fcdcac297167852b23bae6d7bb3bf82a726ff70c"
+uuid = "01fcc997-4f28-56b8-8a06-30002c134abb"
+version = "1.2.1"
 
 [[deps.Fauxcurrences]]
 deps = ["Distances", "GBIF", "LinearAlgebra", "SimpleSDMLayers", "Statistics", "StatsBase"]
@@ -622,6 +626,12 @@ version = "1.3.14+0"
 git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
 uuid = "42e2da0e-8278-4e71-bc24-59509adca0fe"
 version = "1.0.2"
+
+[[deps.HDF5]]
+deps = ["Compat", "HDF5_jll", "Libdl", "Mmap", "Printf", "Random", "Requires", "UUIDs"]
+git-tree-sha1 = "114e20044677badbc631ee6fdc80a67920561a29"
+uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+version = "0.16.16"
 
 [[deps.HDF5_jll]]
 deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
@@ -1562,6 +1572,12 @@ repo-rev = "main"
 repo-url = "../.."
 uuid = "b9a01737-11ee-4b6e-8992-31cab8924b50"
 version = "0.0.1"
+
+[[deps.URIParser]]
+deps = ["Unicode"]
+git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
+uuid = "30578b45-9adc-5946-b283-645ec420af67"
+version = "0.4.1"
 
 [[deps.URIs]]
 git-tree-sha1 = "b7a5e99f24892b6824a954199a45e9ffcc1c70f0"
