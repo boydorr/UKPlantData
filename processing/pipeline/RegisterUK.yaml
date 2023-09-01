@@ -12,45 +12,30 @@ register:
   full_name: UK Centre for Ecology and Hydrology
   website: https://ror.org/00pggkr55
 
-- external_object: UKModel/HadUK-tas
-  namespace_name: MetOffice
-  root: https://dap.ceda.ac.uk/
-  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/tas/mon/v20220310/tas_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
-  title: HadUK-Grid
-  description: Gridded and regional average average temperature observations for the UK, 2021
-  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
+- data_product: UKModel/HadUK-tas
+  description: Gridded and regional average temperature observations for the UK, 2021
   file_type: nc
-  release_date: 2018-10-21T12:00
-  version: "1.0.3"
-  primary: True
+  root: file:///home/claireh/Documents/GIT/UKPlantData/data/raw/
+  path: tas_hadukgrid_uk_1km_mon_202101-202112.nc
+  version: "0.0.1"
   authors:
   - https://ror.org/01ch2yn61
 
-- external_object: UKModel/HadUK-sun
-  namespace_name: MetOffice
-  root: https://dap.ceda.ac.uk/
-  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/sun/mon/v20220310/sun_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
-  title: HadUK-Grid
-  description: Gridded and regional average solar radition observations for the UK, 2021
-  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
+- data_product: UKModel/HadUK-sun
+  description: Gridded and regional average solar observations for the UK, 2021
   file_type: nc
-  release_date: 2018-10-21T12:00
-  version: "1.0.3"
-  primary: True
+  root: file:///home/claireh/Documents/GIT/UKPlantData/data/raw/
+  path: sun_hadukgrid_uk_1km_mon_202101-202112.nc
+  version: "0.0.1"
   authors:
   - https://ror.org/01ch2yn61
 
-- external_object: UKModel/HadUK-rain
-  namespace_name: MetOffice
-  root: https://dap.ceda.ac.uk/
-  path: badc/ukmo-hadobs/data/insitu/MOHC/HadOBS/HadUK-Grid/v1.1.0.0/1km/rainfall/mon/v20220310/rainfall_hadukgrid_uk_1km_mon_202101-202112.nc?download=1
-  title: HadUK-Grid
+- data_product: UKModel/HadUK-rain
   description: Gridded and regional average rainfall observations for the UK, 2021
-  identifier: http://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb
   file_type: nc
-  release_date: 2018-10-21T12:00
-  version: "1.0.3"
-  primary: True
+  root: file:///home/claireh/Documents/GIT/UKPlantData/data/raw/
+  path: rainfall_hadukgrid_uk_1km_mon_202101-202112.nc
+  version: "0.0.1"
   authors:
   - https://ror.org/01ch2yn61
 
@@ -59,7 +44,7 @@ register:
   file_type: tif
   root: file:///home/claireh/Documents/GIT/UKPlantData/data/raw/
   path: gb2021lcm1km_dominant_aggregate.tif
-  version: "0.0.2"
+  version: "0.0.3"
   authors:
   - https://ror.org/00pggkr55
 
