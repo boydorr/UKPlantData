@@ -34,7 +34,7 @@ ref = createRef(1000.0m, 1000.0m, 7e5m, 1000.0m, 1.3e6m)
 uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
 
 numspecies = length(unique(uk.species))
-start = startingArray(uk, nrow(species), 10)
+start = startingArray(uk, nrow(numspecies), 10)
 path = link_write!(handle, "StartArray")
 JLD2.@save path start
 
