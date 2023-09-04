@@ -1,0 +1,18 @@
+run_metadata:
+  default_input_namespace: claireh93
+  description: UK model inputs
+  script: |
+    julia --project=processing/uk processing/uk/startingArray.jl
+
+read:
+- data_product: UKModel/GBIF-records
+- data_product: UKModel/PLANTATT-data
+
+write:
+- data_product: StartArray
+  description: Start abundances for UK wide model
+  file_type: jld2
+  use: 
+    data_product: UKModel/StartArray
+
+
