@@ -33,6 +33,12 @@ uk = @transform(uk, :east = BNGPoint(lon = :decimalLongitude, lat = :decimalLati
 ref = createRef(1000.0m, 1000.0m, 7e5m, 1000.0m, 1.3e6m)
 uk = @transform(uk, :refval = extractvalues(:east * m, :north * m, ref))
 
+spp_gb = unique(uk.species)
+spp_pa = pa.Taxon_name
+cross_species = spp_gb ∩ spp_pa
+sppDict = Dict(zip(cross_species, 1:length(cross_species)))
+@transform!(uk, :SppID = sppDict[:species])
+
 numspecies = length(unique(uk.species))
 start = startingArray(uk, numspecies, 10)
 path = link_write!(handle, "StartArray")
